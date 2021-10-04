@@ -11,19 +11,24 @@ fn main() {
         .canonicalize()
         .unwrap();
 
-    Command::new("../../../ya")
-        .args(&[
-            "make",
-            "-r",
-            cb_model_interface_root.to_str().unwrap(),
-            // "--sanitize=address",
-            "-o",
-            out_dir.to_str().unwrap(),
-        ])
-        .status()
-        .unwrap_or_else(|e| {
-            panic!("Failed to yamake libcatboostmodel: {}", e);
-        });
+    #[cfg(windows)]
+    let ya = "../../../ya.bat";
+    #[cfg(not(windows))]
+    let ya = "../../../ya";
+    // Command::new("cmd")
+    //     .args(&[
+    //         "../../../ya.bat",
+    //         "make",
+    //         "-r",
+    //         cb_model_interface_root.to_str().unwrap(),
+    //         // "--sanitize=address",
+    //         "-o",
+    //         r"C:\Users\Jannis Froese\DeepSign\deepsign_client\libs\deepsign-scoring\lib", //out_dir.to_str().unwrap(),
+    //     ])
+    //     .status()
+    //     .unwrap_or_else(|e| {
+    //         panic!("Failed to yamake libcatboostmodel: {}", e);
+    //     });
 
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
@@ -41,10 +46,12 @@ fn main() {
         out_dir.join("catboost/libs/model_interface").display()
     );
 
-    if target.contains("apple") {
-        println!("cargo:rustc-link-lib=c++");
-    } else {
-        println!("cargo:rustc-link-lib=stdc++");
-    }
+    println!("cargo:rustc-link-search={}", "C:\\libs");
+
+    //if target.contains("apple") {
+    // println!("cargo:rustc-link-lib=c++");
+    // } else {
+    //     println!("cargo:rustc-link-lib=stdc++");
+    // }
     println!("cargo:rustc-link-lib=dylib=catboostmodel");
 }

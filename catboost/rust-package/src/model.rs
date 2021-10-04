@@ -1,8 +1,11 @@
 use crate::error::{CatBoostError, CatBoostResult};
 use catboost_sys;
-use std::ffi::CString;
+#[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
+#[cfg(windows)]
+use std::os::windows::ffi::OsStrExt;
 use std::path::Path;
+use std::{convert::TryInto, ffi::CString};
 
 pub struct Model {
     handle: *mut catboost_sys::ModelCalcerHandle,
@@ -19,7 +22,11 @@ impl Model {
     /// Load a model from a file
     pub fn load<P: AsRef<Path>>(path: P) -> CatBoostResult<Self> {
         let model = Model::new();
+        #[cfg(unix)]
         let path_c_str = CString::new(path.as_ref().as_os_str().as_bytes()).unwrap();
+        #[cfg(windows)]
+        let path_c_str =
+            CString::new(path.as_ref().as_os_str().to_string_lossy().as_bytes()).unwrap();
         CatBoostError::check_return_value(unsafe {
             catboost_sys::LoadFullModelFromFile(model.handle, path_c_str.as_ptr())
         })?;
@@ -58,7 +65,7 @@ impl Model {
                     .map(|cat_feature| unsafe {
                         catboost_sys::GetStringCatFeatureHash(
                             cat_feature.as_ptr() as *const std::os::raw::c_char,
-                            cat_feature.len(),
+                            cat_feature.len().try_into().unwrap(),
                         )
                     })
                     .collect::<Vec<_>>()
@@ -74,35 +81,35 @@ impl Model {
         CatBoostError::check_return_value(unsafe {
             catboost_sys::CalcModelPredictionWithHashedCatFeatures(
                 self.handle,
-                float_features.len(),
+                float_features.len().try_into().unwrap(),
                 float_features_ptr.as_mut_ptr(),
-                float_features[0].len(),
+                float_features[0].len().try_into().unwrap(),
                 hashed_cat_features_ptr.as_mut_ptr(),
-                cat_features[0].len(),
+                cat_features[0].len().try_into().unwrap(),
                 prediction.as_mut_ptr(),
-                prediction.len(),
+                prediction.len().try_into().unwrap(),
             )
         })?;
         Ok(prediction)
     }
 
     /// Get expected float feature count for model
-    pub fn get_float_features_count(&self) -> usize {
+    pub fn get_float_features_count(&self) -> u64 {
         unsafe { catboost_sys::GetFloatFeaturesCount(self.handle) }
     }
 
     /// Get expected categorical feature count for model
-    pub fn get_cat_features_count(&self) -> usize {
+    pub fn get_cat_features_count(&self) -> u64 {
         unsafe { catboost_sys::GetCatFeaturesCount(self.handle) }
     }
 
     /// Get number of trees in model
-    pub fn get_tree_count(&self) -> usize {
+    pub fn get_tree_count(&self) -> u64 {
         unsafe { catboost_sys::GetTreeCount(self.handle) }
     }
 
     /// Get number of dimensions in model
-    pub fn get_dimensions_count(&self) -> usize {
+    pub fn get_dimensions_count(&self) -> u64 {
         unsafe { catboost_sys::GetDimensionsCount(self.handle) }
     }
 }

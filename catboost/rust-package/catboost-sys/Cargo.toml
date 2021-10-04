@@ -4,5 +4,8 @@ version = "0.1.0"
 authors = ["Sergey Kiselev <kiselev.sg@gmail.com>"]
 edition = "2018"
 
+[dependencies]
+link-cplusplus = "1.0"
+
 [build-dependencies]
-bindgen = "~0.48"
+bindgen = "0.56"
