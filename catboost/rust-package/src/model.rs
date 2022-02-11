@@ -40,7 +40,7 @@ impl Model {
             catboost_sys::LoadFullModelFromBuffer(
                 model.handle,
                 buffer.as_ref().as_ptr() as *const std::os::raw::c_void,
-                buffer.as_ref().len(),
+                buffer.as_ref().len().try_into().unwrap(),
             )
         })?;
         Ok(model)
